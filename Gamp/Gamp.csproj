@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>$(AssemblyName).Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <PackageId>gamp-event-tracking</PackageId>
+    <Title>GAMP Event Tracking</Title>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageProjectUrl>https://github.com/kmcclellan/gamp-event-tracking</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/kmcclellan/gamp-event-tracking</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Description>Client for the event-based (v2) Google Analytics Measurement Protocol.</Description>
+    <Authors>Kyle McClellan</Authors>
+    <Copyright>%A9 2020 Kyle McClellan</Copyright>
+    <PackageTags>Google Analytics;Google Analytics Measurement Protocol</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReleaseNotes>https://github.com/kmcclellan/gamp-event-tracking/releases/tag/v$(Version)</PackageReleaseNotes>
+  </PropertyGroup>
+
+</Project>
