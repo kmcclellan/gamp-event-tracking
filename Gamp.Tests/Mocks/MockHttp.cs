@@ -1,7 +1,9 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,6 +16,7 @@ namespace Gamp.Tests.Mocks
         public HttpStatusCode StatusCode { private get; set; }
 
         private HttpRequestMessage? capturedRequest;
+        private string? capturedContent;
 
         public MockHttp()
         {
@@ -21,19 +24,35 @@ namespace Gamp.Tests.Mocks
         }
 
         public void VerifyMethod(HttpMethod method) =>
-            Assert.AreEqual(method, capturedRequest!.Method);
+            Assert.AreEqual(method, capturedRequest?.Method);
 
-        public void VerifyUri(Predicate<Uri> condition) =>
+        public void VerifyHeaders(Predicate<HttpRequestHeaders> condition)
+        {
+            Assert.IsNotNull(capturedRequest?.Headers);
+            Assert.IsTrue(condition(capturedRequest!.Headers));
+        }
+
+        public void VerifyUri(Predicate<Uri> condition)
+        {
+            Assert.IsNotNull(capturedRequest?.RequestUri);
             Assert.IsTrue(condition(capturedRequest!.RequestUri));
+        }
 
-        public void VerifyContent(Predicate<string> condition) =>
-            Assert.IsTrue(condition(capturedRequest!.Content.ReadAsStringAsync().Result));
+        public void VerifyContent(Predicate<string> condition)
+        {
+            Assert.IsNotNull(capturedContent);
+            Assert.IsTrue(condition(capturedContent!));
+        }
 
-        protected override Task<HttpResponseMessage> SendAsync(
+        protected override async Task<HttpResponseMessage> SendAsync(
                 HttpRequestMessage request, CancellationToken cancellationToken)
         {
             capturedRequest = request;
-            return Task.FromResult(new HttpResponseMessage(StatusCode));
+            if (request.Content != null)
+            {
+                capturedContent = await request.Content.ReadAsStringAsync();
+            }
+            return new HttpResponseMessage(StatusCode);
         }
     }
 }

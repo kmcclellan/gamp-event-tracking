@@ -84,8 +84,18 @@ namespace Gamp
                 .JoinAppend("\n", payload.EventParameters, (sb, ep) => sb.AppendUriParameters(ep))
                 .ToString();
 
+            using var request = new HttpRequestMessage(HttpMethod.Post, uri)
+            {
+                Content = new StringContent(content)
+            };
+
+            if (payload.Parameters.TryGetValue("ua", out var userAgent))
+            {
+                request.Headers.TryAddWithoutValidation("User-Agent", userAgent);
+            }
+
             cancellationToken.ThrowIfCancellationRequested();
-            var response = await http.PostAsync(uri, new StringContent(content), cancellationToken);
+            var response = await http.SendAsync(request, cancellationToken);
             response.EnsureSuccessStatusCode();
         }
     }  

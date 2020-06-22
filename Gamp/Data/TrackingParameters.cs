@@ -78,5 +78,10 @@
         /// The user's preferred language (as an IETF language tag).
         /// </summary>
         public string? UserLanguage { get; set; }
+
+        /// <summary>
+        /// The HTTP User-Agent header associated with the user.
+        /// </summary>
+        public string? UserAgent { get; set; }
     }
 }

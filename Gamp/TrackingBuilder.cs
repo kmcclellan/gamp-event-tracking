@@ -46,6 +46,7 @@ namespace Gamp
                 AddParameter("dt", parameters.DocumentTitle);
                 AddParameter("sr", parameters.ScreenResolution);
                 AddParameter("ul", parameters.UserLanguage);
+                AddParameter("ua", parameters.UserAgent);
                 return this;
             }
 

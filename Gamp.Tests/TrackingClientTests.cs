@@ -46,6 +46,32 @@ namespace Gamp.Tests
         }
 
         [TestMethod]
+        public async Task SendsUserAgentAsHeader()
+        {
+            tracker.Parameters = new Dictionary<string, string>
+            {
+                { "ua", "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0" }
+            };
+
+            await client.Collect(_ => { });
+
+            http.VerifyHeaders(hh => hh.UserAgent.ToString() == "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0");
+        }
+
+        [TestMethod]
+        public async Task IgnoresInvalidUserAgent()
+        {
+            tracker.Parameters = new Dictionary<string, string>
+            {
+                { "ua", "Mozilla/5.0 ((Bad)" }
+            };
+
+            await client.Collect(_ => { });
+
+            http.VerifyHeaders(hh => hh.UserAgent.Count == 0);
+        }
+
+        [TestMethod]
         public async Task SendsEventsInBody()
         {
             tracker.EventParameters = new[]

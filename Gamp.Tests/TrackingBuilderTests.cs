@@ -29,7 +29,8 @@ namespace Gamp.Tests
                     DocumentReferrer = "https://other.com",
                     DocumentTitle = "Hello world!",
                     ScreenResolution = "100x200",
-                    UserLanguage = "fr-CA"
+                    UserLanguage = "fr-CA",
+                    UserAgent = "PostmanRuntime/7.25.0"
                 }));
 
             foreach (var (key, value) in new Dictionary<string, string>
@@ -47,7 +48,8 @@ namespace Gamp.Tests
                 { "dr", "https://other.com" },
                 { "dt", "Hello world!" },
                 { "sr", "100x200" },
-                { "ul", "fr-CA" }
+                { "ul", "fr-CA" },
+                { "ua", "PostmanRuntime/7.25.0" }
             })
             {
                 Assert.AreEqual(value, payload.Parameters[key]);
