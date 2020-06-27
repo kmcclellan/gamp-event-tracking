@@ -20,16 +20,15 @@ services.AddHttpClient<ITrackingClient, TrackingClient>();
 
 Send an event to GAMP using `ITrackingClient`:
 ```c#
-client.AddParameters(new TrackingParameters
+await client.Collect(collection =>
 {
-    TrackingId = "G-XXXXXXXXXX",
-    ClientId = "gamp-readme",
-    SessionId = "1"
-});
+    collection.Parameters
+        .AddTrackingId("G-XXXXXXXXXX")
+        .AddClientId("gamp-readme");
 
-await client.Collect(data =>
-    data.AddEvent("test", ev =>
-      ev.AddParameter("hello", "world!")));
+    collection.AddEvent("test")
+        .AddEventParameter("hello", "world!");
+});
 ```
 ## Documentation
 

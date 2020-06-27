@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <PackageId>gamp-event-tracking</PackageId>
     <Title>GAMP Event Tracking</Title>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -23,7 +23,7 @@
     <Description>Client for the event-based (v2) Google Analytics Measurement Protocol.</Description>
     <Authors>Kyle McClellan</Authors>
     <Copyright>%A9 2020 Kyle McClellan</Copyright>
-    <PackageTags>Google Analytics;Google Analytics Measurement Protocol</PackageTags>
+    <PackageTags>google-analytics event-tracking</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReleaseNotes>https://github.com/kmcclellan/gamp-event-tracking/releases/tag/v$(Version)</PackageReleaseNotes>
   </PropertyGroup>

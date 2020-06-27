@@ -16,72 +16,60 @@ namespace Gamp
     public interface ITrackingClient
     {
         /// <summary>
-        /// Adds parameters to be included in calls to
-        /// <see cref="Collect(Action{ITrackingData}, CancellationToken)"/>.
+        /// Static parameters to be included in calls to
+        /// <see cref="Collect(Action{ITrackingCollection}, CancellationToken)"/>.
         /// </summary>
         /// <remarks>
-        /// These parameters will be merged with subsequent calls and calls to
-        /// <see cref="ITrackingData.AddParameters(TrackingParameters)"/>.
+        /// This data will be merged with <see cref="ITrackingCollection.Parameters"/>.
         /// </remarks>
-        /// <param name="parameters">The parameters to add.</param>
-        /// <returns>The same client instance for chaining.</returns>
-        ITrackingClient AddParameters(TrackingParameters parameters);
+        ITrackingParameters DefaultParameters { get; }
 
         /// <summary>
         /// Send tracking data to GAMP's /collect endpoint.
         /// </summary>
-        /// <param name="configure">The delegate configuring the data to be sent.</param>
+        /// <param name="configure">A delegate configuring the data to be collected.</param>
         /// <param name="cancellationToken">A token for cancelling the HTTP request.</param>
-        /// <returns>The task representing the asychronous operation.</returns>
-        Task Collect(Action<ITrackingData> configure, CancellationToken cancellationToken = default);
+        /// <returns>A task representing the asynchronous operation.</returns>
+        Task Collect(Action<ITrackingCollection> configure, CancellationToken cancellationToken = default);
     }
 
     /// <inheritdoc cref="ITrackingClient"/>
     public class TrackingClient : ITrackingClient
     {
-        private readonly HttpClient http;
-        private readonly ITrackingBuilder builder;
+        ITrackingParameters ITrackingClient.DefaultParameters => payload;
 
-        private readonly List<TrackingParameters> parameters = new List<TrackingParameters>();
+        private readonly HttpClient http;
+        private readonly ITrackingCollector collector;
+
+        private readonly ITrackingPayload payload;
 
         /// <summary>
         /// Creates a new tracking client.
         /// </summary>
-        /// <remarks>
-        /// The instance retains any parameters added with
-        /// <see cref="ITrackingClient.AddParameters(TrackingParameters)"/>.
-        /// </remarks>
         /// <param name="http">The underlying HTTP client to use for requests.</param>
-        public TrackingClient(HttpClient http) : this(http, new TrackingBuilder()) { }
+        public TrackingClient(HttpClient http) : this(http, new TrackingCollector()) { }
 
-        internal TrackingClient(HttpClient http, ITrackingBuilder builder)
+        internal TrackingClient(HttpClient http, ITrackingCollector collector)
         {
             this.http = http;
-            this.builder = builder;
+            this.collector = collector;
+            payload = collector.Begin()
+                .AddApiVersion(2);
 
             this.http.BaseAddress ??= new Uri("https://www.google-analytics.com/");
         }
 
-        ITrackingClient ITrackingClient.AddParameters(TrackingParameters parameters)
+        async Task ITrackingClient.Collect(Action<ITrackingCollection> collect, CancellationToken cancellationToken)
         {
-            this.parameters.Add(parameters);
-            return this;
-        }
-
-        async Task ITrackingClient.Collect(Action<ITrackingData> configure, CancellationToken cancellationToken)
-        {
-            var payload = builder.Build(data =>
-            {
-                foreach (var p in parameters) data.AddParameters(p);
-                configure(data);
-            });
+            var collection = new TrackingCollection(collector, payload);
+            collect(collection);
 
             var uri = new StringBuilder("/g/collect?")
-                .AppendUriParameters(payload.Parameters)
+                .AppendUriParameters(collection.SharedPayload)
                 .ToString();
 
             var content = new StringBuilder()
-                .JoinAppend("\n", payload.EventParameters, (sb, ep) => sb.AppendUriParameters(ep))
+                .JoinAppend("\n", collection.EventPayload, (sb, p) => sb.AppendUriParameters(p))
                 .ToString();
 
             using var request = new HttpRequestMessage(HttpMethod.Post, uri)
@@ -89,7 +77,7 @@ namespace Gamp
                 Content = new StringContent(content)
             };
 
-            if (payload.Parameters.TryGetValue("ua", out var userAgent))
+            if (collection.SharedPayload.TryGetValue("ua", out var userAgent))
             {
                 request.Headers.TryAddWithoutValidation("User-Agent", userAgent);
             }
@@ -97,6 +85,33 @@ namespace Gamp
             cancellationToken.ThrowIfCancellationRequested();
             var response = await http.SendAsync(request, cancellationToken);
             response.EnsureSuccessStatusCode();
+        }
+
+        private class TrackingCollection : ITrackingCollection
+        {
+            public ITrackingParameters Parameters => SharedPayload;
+
+            public ITrackingPayload SharedPayload { get; }
+
+            public IReadOnlyCollection<ITrackingPayload> EventPayload => events;
+
+            private readonly ITrackingCollector collector;
+            private readonly List<ITrackingPayload> events = new List<ITrackingPayload>();
+
+            public TrackingCollection(ITrackingCollector collector, ITrackingPayload payload)
+            {
+                this.collector = collector;
+                SharedPayload = collector.Begin(payload);
+            }
+
+            public ITrackingParameters AddEvent(string name)
+            {
+                var eventData = collector.Begin()
+                    .AddEventName(name);
+
+                events.Add(eventData);
+                return eventData;
+            }
         }
     }  
 }

@@ -1,5 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -9,50 +9,55 @@ using System.Threading.Tasks;
 
 namespace Gamp.Tests.Mocks
 {
-    class MockHttp : HttpMessageHandler
+    class MockHttp
     {
         public HttpClient Client { get; }
+        public HttpMethod Method => handler.Invocations.Single().Method;
+        public Uri Uri => handler.Invocations.Single().Uri;
+        public HttpRequestHeaders Headers => handler.Invocations.Single().Headers;
+        public byte[] Content => handler.Invocations.Single().Content;
 
-        public HttpStatusCode StatusCode { private get; set; }
-
-        private HttpRequestMessage? capturedRequest;
-        private string? capturedContent;
+        private readonly MockHandler handler = new MockHandler();
 
         public MockHttp()
         {
-            Client = new HttpClient(this);
+            Client = new HttpClient(handler);
         }
 
-        public void VerifyMethod(HttpMethod method) =>
-            Assert.AreEqual(method, capturedRequest?.Method);
-
-        public void VerifyHeaders(Predicate<HttpRequestHeaders> condition)
+        private class MockHandler : HttpMessageHandler
         {
-            Assert.IsNotNull(capturedRequest?.Headers);
-            Assert.IsTrue(condition(capturedRequest!.Headers));
-        }
+            public IReadOnlyCollection<Invocation> Invocations => invocations;
 
-        public void VerifyUri(Predicate<Uri> condition)
-        {
-            Assert.IsNotNull(capturedRequest?.RequestUri);
-            Assert.IsTrue(condition(capturedRequest!.RequestUri));
-        }
+            private readonly List<Invocation> invocations = new List<Invocation>();
 
-        public void VerifyContent(Predicate<string> condition)
-        {
-            Assert.IsNotNull(capturedContent);
-            Assert.IsTrue(condition(capturedContent!));
-        }
-
-        protected override async Task<HttpResponseMessage> SendAsync(
+            protected override async Task<HttpResponseMessage> SendAsync(
                 HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            capturedRequest = request;
-            if (request.Content != null)
             {
-                capturedContent = await request.Content.ReadAsStringAsync();
+                var content = await request.Content.ReadAsByteArrayAsync();
+
+                invocations.Add(new Invocation(request.Method, request.RequestUri, request.Headers, content));
+
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    RequestMessage = request
+                };
             }
-            return new HttpResponseMessage(StatusCode);
+
+            public class Invocation
+            {
+                public HttpMethod Method { get; }
+                public Uri Uri { get; }
+                public HttpRequestHeaders Headers { get; }
+                public byte[] Content { get; }
+
+                public Invocation(HttpMethod method, Uri uri, HttpRequestHeaders headers, byte[] content)
+                {
+                    Method = method;
+                    Uri = uri;
+                    Headers = headers;
+                    Content = content;
+                }
+            }
         }
     }
 }
